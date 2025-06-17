@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config(); // giữ nguyên nếu chạy local
 const nodemailer = require('nodemailer');
 const readExcel = require('./utils/readExcel');
 
@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
 async function sendEmails() {
     for (const person of emailList) {
         const mailOptions = {
-            from: `"Chỗ Tốt Travel" <${process.env.EMAIL_USER}>`,
+            from: `"Marketing CTCP Van ShinYi" <${process.env.EMAIL_USER}>`,
             to: person.Email,
             subject: 'Chào bạn!',
             html: `<h3>Xin chào ${person.Name || 'bạn'},</h3><p>Đây là email tự động.</p>`

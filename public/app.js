@@ -24,6 +24,7 @@ app.innerHTML = `
               <div class="mb-3">
                 <label class="form-label">Ảnh đính kèm:</label>
                 <input type="file" name="images" class="form-control" accept="image/*" multiple id="imageInput">
+                <div id="file-chosen-text" class="form-text">Không có tệp nào được chọn</div>
                 <div class="form-text">Có thể chọn nhiều file ảnh (jpg, png, ...)</div>
                 <div id="previewImages" class="d-flex flex-wrap gap-2 mt-2"></div>
               </div>
@@ -95,6 +96,7 @@ function renderPreviewImages() {
         removeBtn.type = 'button';
         removeBtn.className = 'btn-close position-absolute top-0 end-0 translate-middle p-1 bg-white rounded-circle';
         removeBtn.style.zIndex = '2';
+        removeBtn.style.left = '75px';
         removeBtn.title = 'Xóa ảnh';
         removeBtn.onclick = function () {
           selectedImages.splice(idx, 1);
@@ -107,6 +109,18 @@ function renderPreviewImages() {
       reader.readAsDataURL(file);
     }
   });
+
+  // Cập nhật dòng chữ theo số lượng ảnh đã chọn
+  const fileChosenText = document.getElementById('file-chosen-text');
+  if (fileChosenText) {
+    if (selectedImages.length === 0) {
+      fileChosenText.textContent = 'Không có tệp nào được chọn';
+    } else if (selectedImages.length === 1) {
+      fileChosenText.textContent = 'Đã chọn 1 ảnh';
+    } else {
+      fileChosenText.textContent = `Đã chọn ${selectedImages.length} ảnh`;
+    }
+  }
 }
 
 // Khi submit form, tạo FormData mới và append tất cả ảnh đã chọn

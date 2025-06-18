@@ -18,7 +18,7 @@ app.innerHTML = `
 
               <div class="mb-3">
                 <label class="form-label">Nội dung email:</label>
-                <textarea name="message" class="form-control" rows="5" required></textarea>
+                <textarea id="editor" name="message" class="form-control" required></textarea>
               </div>
               
               <div class="mb-3">
@@ -123,7 +123,25 @@ function renderPreviewImages() {
   }
 }
 
-// Khi submit form, tạo FormData mới và append tất cả ảnh đã chọn
+// Khởi tạo TinyMCE
+tinymce.init({
+  selector: '#editor',
+  plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+  toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
+  height: 400,
+  menubar: false,
+  language: 'vi',
+  font_family_formats: 'Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Verdana=verdana,geneva;',
+  font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt',
+  content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+  setup: function (editor) {
+    editor.on('change', function () {
+      editor.save(); // Lưu nội dung vào textarea
+    });
+  }
+});
+
+// Cập nhật phần xử lý form submit
 const emailForm = document.getElementById('emailForm');
 if (emailForm) {
   emailForm.addEventListener('submit', async function (e) {
@@ -133,6 +151,10 @@ if (emailForm) {
     const formData = new FormData(form);
     const submitButton = form.querySelector('button[type="submit"]');
     const resultDiv = document.getElementById('result');
+
+    // Lấy nội dung từ TinyMCE
+    const messageContent = tinymce.get('editor').getContent();
+    formData.set('message', messageContent);
 
     // Append tất cả ảnh đã chọn vào formData
     selectedImages.forEach(file => {

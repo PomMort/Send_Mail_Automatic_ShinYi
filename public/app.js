@@ -123,20 +123,105 @@ function renderPreviewImages() {
   }
 }
 
+// Nội dung chữ ký công ty
+const companySignature = `
+<div style="margin-top:40px;">
+  <img src="https://i.imgur.com/R2yuxT4.jpeg" alt="SHIN YI" style="height:60px; margin-bottom:4px;"/>
+  <div style="font-weight:bold; color:#22577A; font-size:16px; margin-top:4px;">CÔNG TY CỔ PHẦN VAN SHIN YI</div>
+  <div style="color:#222; font-size:14px;">Địa chỉ: Đường số 5, KCN Sông Mây, xã Bắc Sơn, Trảng Bom, Đồng Nai</div>
+  <div style="color:#222; font-size:14px;">Hotline: 18009085</div>
+</div>
+`;
+
 // Khởi tạo TinyMCE
+// Nếu chưa có chữ ký thì tự động chèn vào cuối nội dung
+
 tinymce.init({
   selector: '#editor',
-  plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount',
+  plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount nonbreaking',
   toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table | align lineheight | numlist bullist indent outdent | emoticons charmap | removeformat',
   height: 400,
   menubar: false,
   language: 'vi',
   font_family_formats: 'Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Verdana=verdana,geneva;',
   font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt',
-  content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+  content_style: `
+    body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }
+    p { margin: 0; padding: 0; line-height: 1.2; }
+    br { margin: 0; line-height: 1.2; }
+    h1, h2, h3, h4, h5, h6 { margin: 0.5em 0; line-height: 1.2; }
+  `,
+  forced_root_block: false,
+  block_formats: 'Paragraph=p;Header 1=h1;Header 2=h2;Header 3=h3;Header 4=h4;Header 5=h5;Header 6=h6',
   setup: function (editor) {
+    editor.on('init', function () {
+      const content = editor.getContent();
+      if (!content || !content.includes('CÔNG TY CỔ PHẦN VAN SHIN YI')) {
+        editor.setContent((content ? content : '') + companySignature);
+      }
+    });
     editor.on('change', function () {
-      editor.save(); // Lưu nội dung vào textarea
+      editor.save();
+    });
+    editor.on('keydown', function (e) {
+      if (e.keyCode === 13) {
+        const selection = editor.selection;
+        const range = selection.getRng();
+
+        // Lưu vị trí con trỏ hiện tại
+        const bookmark = selection.getBookmark();
+
+        if (e.shiftKey) {
+          // Shift+Enter: Chèn thẻ <p> và đặt con trỏ vào đầu thẻ <p>
+          editor.execCommand('mceInsertContent', false, '<p> </p>');
+          selection.moveToBookmark(bookmark);
+          const newNode = selection.getNode();
+          if (newNode.nodeName === 'P') {
+            range.setStart(newNode, 0);
+            range.setEnd(newNode, 0);
+            selection.setRng(range);
+          }
+        } else {
+          // Enter: Chèn thẻ <br> và đặt con trỏ ngay sau
+          editor.execCommand('InsertLineBreak', false);
+          // Đảm bảo con trỏ không nhảy xuống chữ ký
+          selection.moveToBookmark(bookmark);
+          const newNode = selection.getNode();
+          const nextSibling = newNode.nextSibling;
+          if (newNode.nodeName === 'BR' && nextSibling) {
+            range.setStartBefore(nextSibling);
+            range.setEndBefore(nextSibling);
+            selection.setRng(range);
+          }
+        }
+
+        e.preventDefault();
+      }
+    });
+    // Xử lý áp dụng tiêu đề chỉ cho vùng bôi đen
+    editor.on('BeforeExecCommand', function (e) {
+      if (e.command === 'mceToggleFormat' && ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(e.value)) {
+        const format = e.value; // Ví dụ: h1, h2, h3, ...
+        const selection = editor.selection;
+        const range = selection.getRng();
+
+        if (!selection.isCollapsed()) {
+          // Lấy nội dung được bôi đen
+          const selectedContent = selection.getContent({ format: 'text' });
+          // Tạo thẻ tiêu đề mới
+          const wrapper = `<${format}>${selectedContent}</${format}>`;
+          // Xóa nội dung được bôi đen và chèn thẻ tiêu đề mới
+          editor.execCommand('mceInsertContent', false, wrapper);
+          // Đặt lại con trỏ sau khi chèn
+          const newNode = selection.getNode();
+          if (newNode.nodeName.toLowerCase() === format) {
+            range.setStartAfter(newNode);
+            range.setEndAfter(newNode);
+            selection.setRng(range);
+          }
+          e.preventDefault();
+        }
+      }
     });
   }
 });
